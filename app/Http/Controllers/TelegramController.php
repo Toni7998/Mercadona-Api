@@ -21,5 +21,4 @@ class TelegramController extends Controller
 
         return response()->json(['message' => 'Message sent successfully']);
     }
-
 }
