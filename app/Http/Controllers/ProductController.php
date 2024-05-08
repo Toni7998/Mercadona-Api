@@ -47,30 +47,42 @@ class ProductController extends Controller
 
         if ($response->getStatusCode() == 200) {
             $data = json_decode($response->getBody(), true);
+            $products = [];
 
-            // Devuelve los datos del producto
-            return $data;
+            // Iterar a través de cada categoría
+            foreach ($data['categories'] as $category) {
+                // Iterar a través de cada producto en la categoría
+                foreach ($category['products'] as $product) {
+                    $products[] = [
+                        'name' => $product['display_name'],
+                        'price' => $product['price_instructions']['bulk_price'],
+                    ];
+                }
+            }
+
+            // Devuelve los datos de los productos
+            return $products;
         }
 
         // Si algo sale mal, devuelve un array vacío
         return [];
     }
 
+
+
     private function sendPriceChangeNotification($product, $oldPrice, $newPrice)
-{
-    $message = "El precio del producto '{$product->name}' ha cambiado de {$oldPrice} a {$newPrice}.";
+    {
+        $message = "El precio del producto '{$product->name}' ha cambiado de {$oldPrice} a {$newPrice}.";
 
-    // Obtener usuarios suscritos a las notificaciones
-    $users = \App\Models\User::whereNotNull('telegram_chat_id')->get();
+        // Obtener usuarios suscritos a las notificaciones
+        $users = \App\Models\User::whereNotNull('telegram_chat_id')->get();
 
-    foreach ($users as $user) {
-        Telegram::sendMessage([
-            'chat_id' => $user->telegram_chat_id,
-            'text' => $message
-        ]);
+        foreach ($users as $user) {
+            Telegram::sendMessage([
+                'chat_id' => $user->telegram_chat_id,
+                'text' => $message
+            ]);
+        }
     }
-}
-
-
 
 }
