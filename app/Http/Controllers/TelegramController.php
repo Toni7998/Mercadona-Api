@@ -9,7 +9,7 @@ class TelegramController extends Controller
 {
     public function sendMessage()
     {
-        $users = ...; // Obtener usuarios suscritos a las notificaciones
+        $users = \App\Models\User::whereNotNull('telegram_chat_id')->get();
         $message = "¡Hola! Se ha detectado una subida de precio en algunos productos.";
 
         foreach ($users as $user) {
@@ -21,4 +21,5 @@ class TelegramController extends Controller
 
         return response()->json(['message' => 'Message sent successfully']);
     }
+
 }
