@@ -12,28 +12,28 @@ class ProductController extends Controller
 {
     public function fetchAndProcessData()
     {
+        // Obtener los datos de la API de Mercadona
         $productData = $this->getProductDataFromMercadonaAPI();
 
-        if (!empty($productData)) {
-            foreach ($productData as $data) {
-                $productName = $data['name'];
-                $productPrice = $data['price'];
+        // Procesar los datos y almacenarlos en la base de datos
+        foreach ($productData as $data) {
+            $productName = $data['name'];
+            $productPrice = $data['price'];
 
-                $product = Product::firstOrCreate(['name' => $productName]);
+            $product = Product::firstOrCreate(['name' => $productName]);
 
-                // Comprobar si hay un cambio de precio
-                $lastPrice = $product->prices()->latest()->value('price');
+            // Comprobar si hay un cambio de precio
+            $lastPrice = $product->prices()->latest()->value('price');
 
-                if ($lastPrice !== $productPrice) {
-                    // Guardar el nuevo precio en el historial
-                    $priceHistory = new PriceHistory();
-                    $priceHistory->product_id = $product->id;
-                    $priceHistory->price = $productPrice;
-                    $priceHistory->save();
+            if ($lastPrice !== $productPrice) {
+                // Guardar el nuevo precio en el historial
+                $priceHistory = new PriceHistory();
+                $priceHistory->product_id = $product->id;
+                $priceHistory->price = $productPrice;
+                $priceHistory->save();
 
-                    // Lógica para enviar notificación de cambio de precio a través de Telegram
-                    $this->sendPriceChangeNotification($product, $lastPrice, $productPrice);
-                }
+                // Enviar notificación de cambio de precio a través de Telegram
+                $this->sendPriceChangeNotification($product, $lastPrice, $productPrice);
             }
         }
 
@@ -49,9 +49,8 @@ class ProductController extends Controller
             $data = json_decode($response->getBody(), true);
             $products = [];
 
-            // Iterar a través de cada categoría
+            // Iterar a través de cada categoría y producto
             foreach ($data['categories'] as $category) {
-                // Iterar a través de cada producto en la categoría
                 foreach ($category['products'] as $product) {
                     $products[] = [
                         'name' => $product['display_name'],
@@ -68,8 +67,6 @@ class ProductController extends Controller
         return [];
     }
 
-
-
     private function sendPriceChangeNotification($product, $oldPrice, $newPrice)
     {
         $message = "El precio del producto '{$product->name}' ha cambiado de {$oldPrice} a {$newPrice}.";
@@ -77,6 +74,7 @@ class ProductController extends Controller
         // Obtener usuarios suscritos a las notificaciones
         $users = \App\Models\User::whereNotNull('telegram_chat_id')->get();
 
+        // Enviar notificación a cada usuario suscrito
         foreach ($users as $user) {
             Telegram::sendMessage([
                 'chat_id' => $user->telegram_chat_id,
@@ -84,5 +82,4 @@ class ProductController extends Controller
             ]);
         }
     }
-
 }
